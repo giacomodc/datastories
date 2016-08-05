@@ -15,7 +15,7 @@ library(DT)
 northp <- read.csv("northp.csv", stringsAsFactors = FALSE, header=T)
 #create a empty factor variable to filter the data
 northp[,"filter"] <- "no_filter"
-northp[,"filter"] <- as.factor(northp[,"filter"])
+northp[,"filter"] <- as.factor(northp[,"filter"])   
 #defines variables time
 northp[,"arrival_time"] <- as.POSIXct(northp[,"arrival_time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
 northp[,"exit_time"] <- as.POSIXct(northp[,"exit_time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
