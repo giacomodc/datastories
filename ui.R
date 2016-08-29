@@ -17,7 +17,7 @@ library(readr)
 vardescr <- read.table("data/vardescr.txt", sep="\t", stringsAsFactors = F)
 tamp_retailers <- read.csv("data/tamp_retailers.csv", stringsAsFactors = F, header=T)
 tampString <- read_file('text/tamp_overview.txt')
-npString <- read_file('text/np_overview.txt')
+northpString <- read_file('text/np_overview.txt')
 welcomeString <- read_file('text/welcome.txt')
 dataDescString <- read_file('text/dataDesc.txt')
 var1String <- read_file('text/var1Desc.txt')
@@ -31,7 +31,7 @@ header <- dashboardHeader(title = 'Data Stories from Loading Bays',
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem('Home',tabName='home',icon=icon('dashboard'), 
-             menuSubItem('Welcome',tabName='welcome'),
+             menuSubItem('Welcome',tabName='welcome',),
              menuSubItem('Data Description',tabName='dataDescr'),
              menuSubItem('Large Urban Traffic Generators',tabName='traffGen'),
              menuSubItem('Authors',tabName='authors')),
@@ -43,7 +43,31 @@ sidebar <- dashboardSidebar(
              menuSubItem('Arrivals',tabName='arrivals'),
              menuSubItem('Handling',tabName='handling'),
              menuSubItem('Queueing',tabName='queueing'),
-             menuSubItem('Dwelling',tabName='dwelling'))
+             menuSubItem('Dwelling',tabName='dwelling'),
+             selectInput("mall_filter", "Mall Selection:", 
+                         choices=c("Mall 1","Mall 2","Both malls")),
+             conditionalPanel(condition="input.mall_filter=='Mall 1'",
+                              checkboxGroupInput("date_filter_1", "Date Selection:", 
+                                                 choices = c("24 June 2015 (Wed)"="2015-06-24", 
+                                                             "25 June 2015 (Thu)"="2015-06-25", 
+                                                             "26 June 2015 (Fri)"="2015-06-26"),
+                                                 selected = c('2015-06-24','2015-06-25','2015-06-26'))),
+             conditionalPanel(condition="input.mall_filter=='Mall 2'",
+                              checkboxGroupInput("date_filter_2", "Date Selection:", 
+                                                 choices = c("21 Jan 2016 (Thu)"="2016-01-21", 
+                                                             "22 Jan 2015 (Fri)"="2016-01-22"),
+                                                 selected = c('2016-01-21','2016-01-22'))),
+             conditionalPanel(condition="input.mall_filter=='Both malls'",
+                              checkboxGroupInput("date_filter_12", "Date Selection:", 
+                                                 choices = c("24 June 2015 (Wed)"="2015-06-24", 
+                                                             "25 June 2015 (Thu)"="2015-06-25", 
+                                                             "26 June 2015 (Fri)"="2015-06-26",
+                                                             "21 Jan 2016 (Thu)"="2016-01-21", 
+                                                             "22 Jan 2015 (Fri)"="2016-01-22"),
+                                                 selected = c('2015-06-24','2015-06-25','2015-06-26','2016-01-21','2016-01-22'))),
+             sliderInput("time_filter", "Time Range:",format='##:00',
+                         min = 6, max = 18, step=1, value = c(6,18)),
+             br())
   ))
 
 body <- dashboardBody(
@@ -183,44 +207,6 @@ body <- dashboardBody(
               tags$li("Laura Guerrero, Research Fellow."),
               tags$li(a("Giacomo Dalla Chiara, Ph.D. candidate.", href="http://esd.sutd.edu.sg/phd-students/giacomo-dalla-chiara/"))
             )),
-    tabItem(tabName='mall2',
-            fluidRow(
-              box(width = 8,
-                  height = 380,
-                  imageOutput('tamp_map',height='50px')),
-              box(width = 4,
-                  height = 380,
-                  imageOutput("tamp_overview", height = '50px'))
-              ),
-            fluidRow(
-              tabBox(width = 12,
-                tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=tampString))),
-                tabPanel('Vehicle Count',
-                         fluidRow(
-                           br(),
-                           column(3,
-                                  wellPanel(
-                                    radioButtons("tamp_vehicle_count_visual", "Choose type of visualization:", 
-                                                 choices = c("Table","Percentage", "Barplot")),
-                                    selectInput("tamp_vehicle_split", "Split by:", 
-                                                choices=c("none",
-                                                          "Interviewed vs non-interviewed", 
-                                                          "Vehicle type", 
-                                                          "Refrigerated vs. non-rerigerated",
-                                                          "Parking location",
-                                                          "Number of workers"))
-                                  )    
-                           ),
-                           column(9,
-                                  "main panel",
-                                  DT::dataTableOutput("tamp_vehicle_table")
-                           )
-                         ) #END of fluidrow
-                ),
-                tabPanel('Delivery Count','...')
-              )
-            )
-    ),
     tabItem(tabName='mall1',
             fluidRow(
               box(width = 8,
@@ -232,25 +218,33 @@ body <- dashboardBody(
             ),
             fluidRow(
               tabBox(width = 12,
-                     tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=npString))),
+                     tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=northpString))),
                      tabPanel('Vehicle Count',
                               fluidRow(
                                 br(),
                                 column(3,
                                        wellPanel(
-                                         radioButtons("northp_vehicle_count_visual", "Choose type of visualization:", 
-                                                      choices = c("Table","Percentage", "Barplot")),
                                          selectInput("northp_vehicle_split", "Split by:", 
-                                                     choices=c("No split"="none",
-                                                               "Interviewed vs. non-interviewed"="employer", 
+                                                     choices=c("Interviewed vs. non-interviewed"="employer", 
                                                                "Vehicle type"="vehicle_type", 
                                                                "Refrigerated vs. non-rerigerated"="refrigerated",
                                                                "Parking location"="park_location",
-                                                               "Number of workers"="no_workers"))
+                                                               "Number of workers"="no_workers")),
+                                         radioButtons("northp_vehicle_visual", "Choose type of visualization:", 
+                                                      choices = c("Table","Percentage", "Barplot"))
+                                         
                                        )    
                                 ),
                                 column(8, offset=1,
-                                       DT::dataTableOutput("northp_vehicle_table")
+                                       conditionalPanel(
+                                         condition="input.northp_vehicle_visual!='Barplot'",
+                                         DT::dataTableOutput("northp_vehicle_table")
+                                       ),
+                                       conditionalPanel(
+                                         condition="input.northp_vehicle_visual=='Barplot'",
+                                         plotOutput('northp_vehicle_barplot')
+                                       )
+                                       
                                 )
                               )
                      ),
@@ -259,17 +253,96 @@ body <- dashboardBody(
                                 br(),
                                 column(3,
                                        wellPanel(
-                                         radioButtons("northp_delivery_count_visual", "Choose type of visualization:", 
-                                                      choices = c("Table","Percentage", "Barplot")),
                                          selectInput("northp_delivery_split", "Split by:", 
                                                      choices=c("Deliveries vs. pick-ups"="del_pick", 
                                                                "Size of delivery"="del_size", 
-                                                               "Commodity type"="commodity_type",
-                                                               "Type of store deliverying to"="store_type"))
+                                                               "Commodity type"="commodity_type"
+                                                               )),
+                                         radioButtons("northp_delivery_visual", "Choose type of visualization:", 
+                                                      choices = c("Table","Percentage", "Barplot"))
+                                         
                                        )    
                                 ),
                                 column(8, offset=1,
-                                       DT::dataTableOutput("northp_delivery_table")
+                                       conditionalPanel(
+                                         condition="input.northp_delivery_visual!='Barplot'",
+                                         DT::dataTableOutput("northp_delivery_table")
+                                       ),
+                                       conditionalPanel(
+                                         condition="input.northp_delivery_visual=='Barplot'",
+                                         plotOutput('northp_delivery_barplot')
+                                       )
+                                )
+                              ))
+              )
+            )
+            
+    ),
+    tabItem(tabName='mall2',
+            fluidRow(
+              box(width = 8,
+                  height = 380,
+                  imageOutput('tamp_map',height='50px')),
+              box(width = 4,
+                  height = 380,
+                  imageOutput("tamp_overview", height = '50px'))
+            ),
+            fluidRow(
+              tabBox(width = 12,
+                     tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=tampString))),
+                     tabPanel('Vehicle Count',
+                              fluidRow(
+                                br(),
+                                column(3,
+                                       wellPanel(
+                                         selectInput("tamp_vehicle_split", "Split by:", 
+                                                     choices=c("Interviewed vs. non-interviewed"="employer", 
+                                                               "Vehicle type"="vehicle_type", 
+                                                               "Refrigerated vs. non-rerigerated"="refrigerated",
+                                                               "Parking location"="park_location",
+                                                               "Number of workers"="no_workers")),
+                                         radioButtons("tamp_vehicle_visual", "Choose type of visualization:", 
+                                                      choices = c("Table","Percentage", "Barplot"))
+                                         
+                                       )    
+                                ),
+                                column(8, offset=1,
+                                       conditionalPanel(
+                                         condition="input.tamp_vehicle_visual!='Barplot'",
+                                         DT::dataTableOutput("tamp_vehicle_table")
+                                       ),
+                                       conditionalPanel(
+                                         condition="input.tamp_vehicle_visual=='Barplot'",
+                                         plotOutput('tamp_vehicle_barplot')
+                                       )
+                                       
+                                )
+                              )
+                     ),
+                     tabPanel('Delivery Count',
+                              fluidRow(
+                                br(),
+                                column(3,
+                                       wellPanel(
+                                         selectInput("tamp_delivery_split", "Split by:", 
+                                                     choices=c("Deliveries vs. pick-ups"="del_pick", 
+                                                               "Size of delivery"="del_size", 
+                                                               "Commodity type"="commodity_type"
+                                                     )),
+                                         radioButtons("tamp_delivery_visual", "Choose type of visualization:", 
+                                                      choices = c("Table","Percentage", "Barplot"))
+                                         
+                                       )    
+                                ),
+                                column(8, offset=1,
+                                       conditionalPanel(
+                                         condition="input.tamp_delivery_visual!='Barplot'",
+                                         DT::dataTableOutput("tamp_delivery_table")
+                                       ),
+                                       conditionalPanel(
+                                         condition="input.tamp_delivery_visual=='Barplot'",
+                                         plotOutput('tamp_delivery_barplot')
+                                       )
                                 )
                               ))
               )
@@ -292,11 +365,6 @@ body <- dashboardBody(
     tabItem(tabName='arrivals',
             fluidRow(
               box(width=3,status='primary',
-                  checkboxGroupInput("input_date", "Choose date:", 
-                                     choices = c("Wednesday 24th June"="2015-06-24", 
-                                                 "Thursday 25th June"="2015-06-25", 
-                                                 "Friday 26th June"="2015-06-26"),
-                                     selected = "Wednesday 24th June"),
                   sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
               ),
               column(9,solidHeader=T,
@@ -312,12 +380,12 @@ body <- dashboardBody(
                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
                                          "Handling time by arrival time"), 
                               selected="htime_distribution"),
-                  h4("Add filters:"),
-                  checkboxInput("onlygv_handling", "Include only goods vehicle"),
                   checkboxInput("byparkloc", "Differentiate by park location"),
                   conditionalPanel(
                     condition = "input.byparkloc",
-                    checkboxGroupInput("park", "Park location:", c("Street"="street", "Loading bay"="LB", "Carpark"="carpark"))
+                    checkboxGroupInput("park", "Park location:", 
+                                       c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
+                                       selected = c('street','LB','car_park'))
                   )
               ), #END of column
               box(width=9,solidHeader=T,
@@ -336,21 +404,16 @@ body <- dashboardBody(
     tabItem(tabName='queueing',
             fluidRow(
               box(width=4,status='primary',
-                     checkboxInput("onlygv_queue", "Include only goods vehicle."),
                      checkboxInput("onlyLB_queue", "Include only vehicles that parked in the loading bay.")
               ),
               
               box(width=8,solidHeader=T,
-                     "main panel",
                      plotOutput("hist_queue")
               )
             )),
     tabItem(tabName='dwelling',
             fluidRow(
-              box(width=4,status='primary',
-                  checkboxInput("onlygv_dwell", "Include only goods vehicle.")
-              ),
-              box(width=8,solidHeader=T,
+              box(width=12,solidHeader=T,
                   plotOutput("hist_dwell")
               )
             ))
