@@ -1,4 +1,3 @@
-#ziqi
 library(shiny)
 library(ggplot2)
 library(leaflet)
@@ -545,24 +544,20 @@ shinyServer(function(input, output, session) {
     
   
   ### VEHICLES IN THE SYSTEM
-  data_no_agents <- reactive({
+  data_in_sys <- reactive({
     temp <- dat
     if (input$mall_filter=="Mall 1") temp <- subset(temp,temp$mall=="np")
     if (input$mall_filter=='Mall 2') temp <- subset(temp,temp$mall=='tp')
+    
     temp <- subset(temp, temp$date %in% input_date())
-    temp <- subset(temp, 
-                         hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    temp <- subset(temp, hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
     temp <- temp[!is.na(temp[,"entry_time"]) & !is.na(temp[,"exit_time"]),c("park_location", "entry_time", "exit_time", "dtime")]
-    if (input$without_passby==T) temp <- temp[temp[,"dtime"]>3,] #if dwelling <3min then they are passing by
-    if (is.null(input$park_location)) {
-      entries <- data.frame(cbind(as.character(temp[,"entry_time"]), rep(1,length(temp[,"entry_time"]))), stringsAsFactors=F)
-      exits <- data.frame(cbind(as.character(temp[,"exit_time"]), rep(-1,length(temp[,"exit_time"]))), stringsAsFactors=F)
-    } else {
-      entries <- data.frame(cbind(as.character(temp[,"entry_time"]), rep(1,length(temp[,"entry_time"])), rep(0,length(temp[,"entry_time"]))), stringsAsFactors=F)
-      exits <- data.frame(cbind(as.character(temp[,"exit_time"]), rep(-1,length(temp[,"exit_time"])), rep(0, length(temp[,"exit_time"]))), stringsAsFactors=F)
-      entries[temp[,"park_location"] %in% input$park_location & !is.na(temp[,"park_location"]),3] <- rep(1, length(entries[temp[,"park_location"] %in% input$park_location & !is.na(temp[,"park_location"]),3]))
-      exits[temp[,"park_location"] %in% input$park_location & !is.na(temp[,"park_location"]),3] <- rep(-1, length(exits[temp[,"park_location"] %in% input$park_location & !is.na(temp[,"park_location"]),3]))
+    if (!is.null(input$park_location)){
+      temp <- subset(temp,temp$park_location %in% input$park_location)
     }
+    entries <- data.frame(cbind(as.character(temp[,"entry_time"]), rep(1,length(temp[,"entry_time"]))), stringsAsFactors=F)
+    exits <- data.frame(cbind(as.character(temp[,"exit_time"]), rep(-1,length(temp[,"exit_time"]))), stringsAsFactors=F)
+    
     no_agents <- rbind(entries, exits) 
     names(no_agents)[1] <- "time"
     no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
@@ -571,42 +566,45 @@ shinyServer(function(input, output, session) {
       for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
       no_agents <- no_agents[order(no_agents[,"time"] ),]
     }
-    #no_agents[,"change"] <- as.numeric(no_agents[,"change"])
-    #no_agents[,"tot"] <- NA
-    #no_agents[1,"tot"] <- no_agents[1,"change"]
-    #for (i in 2:nrow(no_agents)) no_agents[i,"tot"] <- no_agents[i-1,"tot"]+no_agents[i,"change"]
-    if (ncol(no_agents)==2) {
-      no_agents[,2] <- as.numeric(no_agents[,2])
-      no_agents[,3] <- NA
-      no_agents[1,3] <- no_agents[1,2]
-      for (j in 2:nrow(no_agents)) no_agents[j,3] <- no_agents[j-1,3]+no_agents[j,2]
-    } else {
-      for (i in 2:ncol(no_agents)) {
-        no_agents[,i] <- as.numeric(no_agents[,i])
-        no_agents[,i+2] <- NA
-        no_agents[1,i+2] <- no_agents[1,i]
-        for (j in 2:nrow(no_agents)) no_agents[j,i+2] <- no_agents[j-1,i+2]+no_agents[j,i]
-      }
+    
+    no_agents[,2] <- as.numeric(no_agents[,2])
+    no_agents[,3] <- NA
+    no_agents[1,3] <- no_agents[1,2]
+    for (j in 2:nrow(no_agents)) no_agents[j,3] <- no_agents[j-1,3]+no_agents[j,2]
+    
+    no_agents <- no_agents[,c(1,3)]
+    names(no_agents) <- c('time','number')
+    no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+    
+    
+    system_table <- data.frame(rep(NA, 
+                                     length(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                                to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                                by=1))))
+    
+    names(system_table) <- 'time'
+    
+    for (i in 1:length(input_date())) {
+      system_table[,1] <- as.POSIXct(seq(from = as.POSIXct(paste(input_date()[i], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                           to = as.POSIXct(paste(input_date()[i], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                           by=1), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+      system_table <- merge(system_table,no_agents,by='time',all.x=TRUE)
+      system_table[1,i+1] <- 0
+      system_table[i+1] <- na.locf(system_table[i+1])
     }
-    rownames(no_agents) <- no_agents[,"time"]
-    if (is.null(input$park_location)) {
-      no_agents <- no_agents[,-1]
-      no_agents[,1] <- no_agents[,2]
-      names(no_agents)[1] <- "goods vehicles (GVs)"
-    } else {
-      no_agents <- no_agents[,4:5]
-      names(no_agents) <- c("goods vehicles", paste("GVs parked ", paste(input$park_location, collapse = ' or ')))
-    }
-    step_plot <- as.xts(no_agents)
-    step_plot
-    #step_plot[,1]
+    rownames(system_table) <- as.POSIXct(system_table[,1],format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+    names(system_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
+    system_table <- as.xts(system_table)
+    system_table[,-1]
   })
   output$step_plot <- renderDygraph({
-    dygraph(data_no_agents(), main="Total number of goods vehicles in the system") %>%
-      dyOptions(stepPlot=T, useDataTimezone = TRUE) %>%
-      dyAxis("y", label = "No. goods vehicles") %>%
-      #dyAxis("x", label = "Time") %>%
-      dyLimit(6, color = "red")
+    dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
+      dyHighlight(highlightCircleSize = 3, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE) %>%
+      dyLegend(labelsSeparateLines=T, width=170) %>%
+      dyAxis("y", label="No. goods vehicles") %>%
+      dyAxis("x", label="Time") %>% 
+      dyLimit(6, color = 'red') %>%
+      dyOptions(useDataTimezone = T)
   })
   
   
@@ -629,7 +627,7 @@ shinyServer(function(input, output, session) {
     arrivals_table[,1] <- as.POSIXct(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                          to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                          by=input_interval*60), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
-    names(arrivals_table) <- c("aaa", format(as.Date(input_date(), tz="America/Los_Angeles"), format="%B %d %Y"))
+    names(arrivals_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
     rownames(arrivals_table) <- arrivals_table[,1]
     arrivals_table <- as.xts(arrivals_table)
     arrivals_table[,-1]

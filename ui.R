@@ -352,11 +352,11 @@ body <- dashboardBody(
     tabItem(tabName='sysPerf',
             fluidRow(
               box(width=4,status='primary',
-                  checkboxInput("without_passby", "Eliminates vehicles passying by"),
                   checkboxGroupInput("park_location", "Show vehicles that parked...", 
                                      choices = c("...inside the loading bay"="LB",
-                                                 "...inside the passenger carpark"="carpark", 
-                                                 "...on the street"="street"))
+                                                 "...inside the passenger carpark"="car_park", 
+                                                 "...on the street"="street"),
+                                     selected = c('street','LB','car_park'))
               ),
               box(width=8,solidHeader=T,
                      dygraphOutput("step_plot")
