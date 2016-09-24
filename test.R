@@ -4,7 +4,7 @@ dat[,"exit_time"] <- as.POSIXct(dat[,"exit_time"], format="%Y-%m-%d %H:%M:%S", t
 input_date <- c('2015-06-24','2015-06-25','2015-06-26')
 input_time <- c('6:00:00','18:00:00')
 input_interval <- 50
-parking <- c('street')
+parking <- NULL
 
 temp <- dat
 temp <- subset(temp, temp$date %in% input_date)
