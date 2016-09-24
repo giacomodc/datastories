@@ -598,13 +598,23 @@ shinyServer(function(input, output, session) {
     system_table[,-1]
   })
   output$step_plot <- renderDygraph({
-    dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
+    stepplot <- dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
       dyHighlight(highlightCircleSize = 3, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE) %>%
       dyLegend(labelsSeparateLines=T, width=170) %>%
       dyAxis("y", label="No. goods vehicles") %>%
       dyAxis("x", label="Time") %>% 
-      dyLimit(6, color = 'red') %>%
       dyOptions(useDataTimezone = T)
+    if (input$mall_filter=='Mall 1'){
+      stepplot <- dyLimit(stepplot, 6, color = 'red')
+    }
+    else if (input$mall_filter=='Mall 2'){
+      stepplot <- dyLimit(stepplot, 18, color = 'green')
+    }
+    else{
+      stepplot <- dyLimit(stepplot, 6, color = 'red')
+      stepplot <- dyLimit(stepplot, 18, color = 'green')
+    }
+    stepplot
   })
   
   

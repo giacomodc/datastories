@@ -351,69 +351,89 @@ body <- dashboardBody(
     ),
     tabItem(tabName='sysPerf',
             fluidRow(
-              box(width=4,status='primary',
+              box(width=12,status='warning',
                   checkboxGroupInput("park_location", "Show vehicles that parked...", 
                                      choices = c("...inside the loading bay"="LB",
                                                  "...inside the passenger carpark"="car_park", 
                                                  "...on the street"="street"),
-                                     selected = c('street','LB','car_park'))
-              ),
-              box(width=8,solidHeader=T,
-                     dygraphOutput("step_plot")
+                                     selected = c('street','LB','car_park'),inline=TRUE)
               )
+            ),
+            fluidRow(
+              column(width=12,solidHeader=T,
+                  dygraphOutput("step_plot")
+              )
+            ),
+            fluidRow(
+              column(width=12,'Note: The red dash represents the size of loading bay of Mall 1 (2015), and the green dash represents the size of loading bay of Mall 2 (2016).')
             )),
     tabItem(tabName='arrivals',
-            fluidRow(
-              box(width=3,status='primary',
-                  sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
-              ),
-              column(9,solidHeader=T,
-                     dygraphOutput("arrivals_plot")
-              )
-              
-            )),
+            tabBox(width=12,
+              tabPanel('Arrivals Distribution',
+                       fluidRow(
+                         box(width=12,status='warning',
+                             sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
+                         )
+                       ),
+                       fluidRow(
+                         column(12,solidHeader=T,
+                                dygraphOutput("arrivals_plot")
+                         )
+                       )),
+              tabPanel('Cumulative Arrivals'))),
     tabItem(tabName='handling',
             fluidRow(
-              box(width=3,status='primary',
+              box(width=8,status='warning',
                   selectInput("which_visualization_handling", "Select the visualization:", 
                               choices= c("Handling times distribution"="htime_distribution", 
                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
-                                         "Handling time by arrival time"), 
-                              selected="htime_distribution"),
-                  checkboxInput("byparkloc", "Differentiate by park location"),
-                  conditionalPanel(
-                    condition = "input.byparkloc",
+                                         "Handling time by arrival time"='htime_arrival'), 
+                              selected="htime_distribution")
+              ),
+              box(width=4,status='warning',
+                  checkboxInput("byparkloc", "Differentiate by park location"))
+            ),
+            fluidRow(
+              conditionalPanel(
+                condition = "input.byparkloc",
+                box(width=12,status='primary',
                     checkboxGroupInput("park", "Park location:", 
                                        c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
-                                       selected = c('street','LB','car_park'))
-                  )
-              ), #END of column
-              box(width=9,solidHeader=T,
-                     conditionalPanel(
-                       condition="input.which_visualization_handling=='htime_distribution'",
-                       textOutput("nrowsfinal"),
-                       plotOutput("hist_htime")
-                     ),
-                     conditionalPanel(
-                       condition="input.which_visualization_handling=='htime_delsize'",
-                       #plotOutput("delsize_htime")
-                       "coming soon!"
-                     )
+                                       selected = c('street','LB','car_park'),inline=TRUE)
+                    )
               )
+            ),
+            fluidRow(
+              column(width=12,solidHeader=T,
+                  conditionalPanel(
+                    condition="input.which_visualization_handling=='htime_distribution'",
+                    textOutput("nrowsfinal"),
+                    plotOutput("hist_htime")
+                  ),
+                  conditionalPanel(
+                    condition="input.which_visualization_handling=='htime_delsize'",
+                    #plotOutput("delsize_htime")
+                    "coming soon!"
+                  ),
+                  conditionalPanel(
+                    condition="input.which_visualization_handling=='htime_arrival'",
+                    #plotOutput("delsize_htime")
+                    "coming soon!"
+                  ))
             )),
     tabItem(tabName='queueing',
             fluidRow(
-              box(width=4,status='primary',
+              box(width=12,status='warning',
                      checkboxInput("onlyLB_queue", "Include only vehicles that parked in the loading bay.")
               ),
               
-              box(width=8,solidHeader=T,
+              column(width=12,solidHeader=T,
                      plotOutput("hist_queue")
               )
             )),
     tabItem(tabName='dwelling',
             fluidRow(
-              box(width=12,solidHeader=T,
+              column(width=12,solidHeader=T,
                   plotOutput("hist_dwell")
               )
             ))
