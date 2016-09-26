@@ -2,6 +2,6 @@ name: datastories
 account: datastories
 server: shinyapps.io
 appId: 125931
-bundleId: 559032
+bundleId: 568204
 url: https://datastories.shinyapps.io/datastories/
-when: 1473996464.13499
+when: 1474859318.37854
