@@ -33,9 +33,6 @@ m <- addMarkers(m, lng=c(103.944696, 103.836052), lat=c(1.352683, 1.429508), lay
 #MAP shopping malls
 malls <- read.csv("data/shopping_malls.csv", stringsAsFactors = FALSE, header=T, na.strings=c("","NA"))
 
-#System performance preparation
-
-
 ##############################################################################################################
 shinyServer(function(input, output, session) {
   ### DATA DESCRIPTION 
