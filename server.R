@@ -33,6 +33,7 @@ m <- addMarkers(m, lng=c(103.944696, 103.836052), lat=c(1.352683, 1.429508), lay
 #MAP shopping malls
 malls <- read.csv("data/shopping_malls.csv", stringsAsFactors = FALSE, header=T, na.strings=c("","NA"))
 
+#System performance preparation
 
 
 ##############################################################################################################
@@ -592,10 +593,11 @@ shinyServer(function(input, output, session) {
       system_table[1,i+1] <- 0
       system_table[i+1] <- na.locf(system_table[i+1])
     }
-    rownames(system_table) <- as.POSIXct(system_table[,1],format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     names(system_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
-    system_table <- as.xts(system_table)
-    system_table[,-1]
+    mytime <- system_table[,1]
+    myvalue <- system_table[,-1]
+    
+    xts(myvalue,order.by=mytime,tz='Asia/Singapore')
   })
   output$step_plot <- renderDygraph({
     stepplot <- dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
@@ -638,9 +640,9 @@ shinyServer(function(input, output, session) {
                                          to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                          by=input_interval*60), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     names(arrivals_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
-    rownames(arrivals_table) <- arrivals_table[,1]
-    arrivals_table <- as.xts(arrivals_table)
-    arrivals_table[,-1]
+    mytime <- arrivals_table[,1]
+    myvalue <- arrivals_table[,-1]
+    xts(myvalue,order.by=mytime,tz='Asia/Singapore')
   })  
   
   output$arrivals_plot <- renderDygraph({ ####

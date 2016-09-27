@@ -396,7 +396,7 @@ body <- dashboardBody(
             fluidRow(
               conditionalPanel(
                 condition = "input.byparkloc",
-                box(width=12,status='primary',
+                box(width=12,status='warning',
                     checkboxGroupInput("park", "Park location:", 
                                        c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
                                        selected = c('street','LB','car_park'),inline=TRUE)
