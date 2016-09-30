@@ -31,7 +31,7 @@ header <- dashboardHeader(title = 'Data Stories from Loading Bays',
 sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem('Home',tabName='home',icon=icon('dashboard'), 
-             menuSubItem('Welcome',tabName='welcome',),
+             menuSubItem('Welcome',tabName='welcome'),
              menuSubItem('Data Description',tabName='dataDescr'),
              menuSubItem('Large Urban Traffic Generators',tabName='traffGen'),
              menuSubItem('Authors',tabName='authors')),
@@ -45,7 +45,8 @@ sidebar <- dashboardSidebar(
              menuSubItem('Queueing',tabName='queueing'),
              menuSubItem('Dwelling',tabName='dwelling'),
              selectInput("mall_filter", "Mall Selection:", 
-                         choices=c("Mall 1","Mall 2","Both malls")),
+                         choices=c("Mall 1","Mall 2","Both malls"),
+                         selected='Mall 1'),
              conditionalPanel(condition="input.mall_filter=='Mall 1'",
                               checkboxGroupInput("date_filter_1", "Date Selection:", 
                                                  choices = c("24 June 2015 (Wed)"="2015-06-24", 
@@ -67,7 +68,9 @@ sidebar <- dashboardSidebar(
                                                  selected = c('2015-06-24','2015-06-25','2015-06-26','2016-01-21','2016-01-22'))),
              sliderInput("time_filter", "Time Range:",format='##:00',
                          min = 6, max = 18, step=1, value = c(6,18)),
-             br())
+             column(width=2),
+             actionButton(inputId='update_side',label=' Update Visuals',icon=icon('refresh',lib='glyphicon')),
+             br(),br())
   ))
 
 body <- dashboardBody(
@@ -356,7 +359,8 @@ body <- dashboardBody(
                                      choices = c("...inside the loading bay"="LB",
                                                  "...inside the passenger carpark"="car_park", 
                                                  "...on the street"="street"),
-                                     selected = c('street','LB','car_park'),inline=TRUE)
+                                     selected = c('street','LB','car_park'),inline=TRUE),
+                  actionButton(inputId='update_sys',label=' Update Visuals',icon=icon('refresh',lib='glyphicon'))
               )
             ),
             fluidRow(
@@ -368,19 +372,25 @@ body <- dashboardBody(
               column(width=12,'Note: The red dash represents the size of loading bay of Mall 1 (2015), and the green dash represents the size of loading bay of Mall 2 (2016).')
             )),
     tabItem(tabName='arrivals',
+            fluidRow(
+              box(width=12,status='warning',
+                  sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10),
+                  actionButton(inputId='update_arrivals',label=' Update Visuals',icon=icon('refresh',lib='glyphicon'))
+              )
+            ),
             tabBox(width=12,
               tabPanel('Arrivals Distribution',
-                       fluidRow(
-                         box(width=12,status='warning',
-                             sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
-                         )
-                       ),
                        fluidRow(
                          column(12,solidHeader=T,
                                 dygraphOutput("arrivals_plot")
                          )
                        )),
-              tabPanel('Cumulative Arrivals'))),
+              tabPanel('Cumulative Arrivals',
+                       fluidRow(
+                         column(12,solidHeader=T,
+                                dygraphOutput("arrivals_plot_cum"))
+                       )
+              ))),
     tabItem(tabName='handling',
             fluidRow(
               box(width=8,status='warning',
@@ -389,7 +399,7 @@ body <- dashboardBody(
                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
                                          "Handling time by arrival time"='htime_arrival'), 
                               selected="htime_distribution")
-              ),
+                  ),
               box(width=4,status='warning',
                   checkboxInput("byparkloc", "Differentiate by park location"))
             ),
