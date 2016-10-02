@@ -529,26 +529,65 @@ shinyServer(function(input, output, session) {
     DT::datatable(tamp_delivery_table_data(), options = list(paging = FALSE, searching = FALSE))
   )
   
-  input_date <- reactive({
+  ### Sidebar filters
+#   delayDefault <- reactiveValues(default=0)
+#   observeEvent(input$update_side,{
+#     delayDefault$default <- input$update_side
+#   })
+  
+  input_date <- eventReactive(input$update_side,{
     if (input$mall_filter=='Mall 1') temp <- input$date_filter_1
     if (input$mall_filter=='Mall 2') temp <- input$date_filter_2
     if (input$mall_filter=='Both malls') temp <- input$date_filter_12
     temp
   })
   
-  input_time <- reactive({
-    c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':00:00'))
+#   input_date <- reactive({
+#     if (delayDefault$default==0) {
+#       input$date_filter_1
+#     }
+#     else{
+#       input_date_event()
+#     }
+#   })
+  
+  input_time <- eventReactive(input$update_side,{
+    c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':01:00'))
   })
+  
+#   input_time <- reactive({
+#     if (delayDefault$default==0){
+#       c('6:00:00','18:00:00')
+#     }
+#     else{
+#       input_time_event()
+#     }
+#   })
     
   
   ### VEHICLES IN THE SYSTEM
+#   delayDefault_sys <- reactiveValues(default=0)
+#   observeEvent(input$update_sys,{
+#     delayDefault_sys$default <- input$update_sys
+#   })
+  park_location <- eventReactive(input$update_sys,{
+    input$park_location
+  })
+#   park_location <- reactive({
+#     if (delayDefault_sys$default==0) c('street','LB','car_park')
+#     else park_location_event()
+#   })
+  mall_filter <- eventReactive(input$update_side,{
+    input$mall_filter
+  })
+#   mall_filter <- reactive({
+#     if (delayDefault$default==0) 'Mall 1'
+#     else mall_filter_event()
+#   })
   data_in_sys <- reactive({
     temp <- dat
-    if (input$mall_filter=="Mall 1") temp <- subset(temp,temp$mall=="np")
-    if (input$mall_filter=='Mall 2') temp <- subset(temp,temp$mall=='tp')
-    
     temp <- subset(temp, temp$date %in% input_date())
-    temp <- subset(temp, hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    temp <- subset(temp, hour(temp$entry_time)>=6&hour(temp$entry_time)<=18)
     temp <- temp[!is.na(temp[,"entry_time"]) & !is.na(temp[,"exit_time"]),c("park_location", "entry_time", "exit_time", "dtime")]
     if (!is.null(input$park_location)){
       temp <- subset(temp,temp$park_location %in% input$park_location)
@@ -560,10 +599,10 @@ shinyServer(function(input, output, session) {
     names(no_agents)[1] <- "time"
     no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     no_agents <- no_agents[order(no_agents[,"time"] ),]
-    while (max(table(no_agents[,"time"])) >1) {
-      for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
-      no_agents <- no_agents[order(no_agents[,"time"] ),]
-    }
+#     while (max(table(no_agents[,"time"])) >1) {
+#       for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
+#       no_agents <- no_agents[order(no_agents[,"time"] ),]
+#     }
     
     no_agents[,2] <- as.numeric(no_agents[,2])
     no_agents[,3] <- NA
@@ -572,29 +611,23 @@ shinyServer(function(input, output, session) {
     
     no_agents <- no_agents[,c(1,3)]
     names(no_agents) <- c('time','number')
-    no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+    no_agents$date <- date(no_agents$time)
+    year(no_agents$time) <- 2016
+    month(no_agents$time) <- 1
+    day(no_agents$time) <- 1
     
-    
-    system_table <- data.frame(rep(NA, 
-                                     length(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                                to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                                by=1))))
-    
-    names(system_table) <- 'time'
-    
-    for (i in 1:length(input_date())) {
-      system_table[,1] <- as.POSIXct(seq(from = as.POSIXct(paste(input_date()[i], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                           to = as.POSIXct(paste(input_date()[i], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                           by=1), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
-      system_table <- merge(system_table,no_agents,by='time',all.x=TRUE)
-      system_table[1,i+1] <- 0
-      system_table[i+1] <- na.locf(system_table[i+1])
+    system_table <- no_agents
+    dates <- unique(system_table$date)
+    system_table[2] <- NULL
+    system_table[2] <- NULL
+    for (i in 1:length(dates)){
+      temp <- subset(no_agents,no_agents$date==dates[i])
+      system_table <- merge(system_table,temp[c(1,2)],by='time',all.x=TRUE)
+      names(system_table)[length(names(system_table))] <- as.character(dates[i])
     }
-    names(system_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
-    mytime <- system_table[,1]
-    myvalue <- system_table[,-1]
-    
-    xts(myvalue,order.by=mytime,tz='Asia/Singapore')
+    system_table[1,-1] <- 0
+    system_table[-1] <- na.locf(system_table[-1])
+    xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
   })
   output$step_plot <- renderDygraph({
     stepplot <- dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
@@ -603,10 +636,10 @@ shinyServer(function(input, output, session) {
       dyAxis("y", label="No. goods vehicles") %>%
       dyAxis("x", label="Time") %>% 
       dyOptions(useDataTimezone = T)
-    if (input$mall_filter=='Mall 1'){
+    if (mall_filter() == 'Mall 1'){
       stepplot <- dyLimit(stepplot, 6, color = 'red')
     }
-    else if (input$mall_filter=='Mall 2'){
+    else if (mall_filter() == 'Mall 2'){
       stepplot <- dyLimit(stepplot, 18, color = 'green')
     }
     else{
@@ -618,8 +651,20 @@ shinyServer(function(input, output, session) {
   
   
   ### ARRIVALS
-  arrivals_plot_data <- reactive({ ####
-    input_interval <- input$input_interval
+  delayDefault_arrivals <- reactiveValues(default=0)
+  observeEvent(input$update_arrivals,{
+    delayDefault_arrivals$default <- input$update_arrivals
+  })
+  input_interval_event <- eventReactive(input$update_arrivals,{
+    input$input_interval
+  })
+  input_interval <- reactive({
+    if (delayDefault_arrivals$default==0) 50
+    else input_interval_event()
+  })
+  
+  arrivals_data <- reactive({ ####
+    input_interval <- input_interval()
     arrivals_table <- data.frame(rep(NA, 
                                      length(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                                 to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
@@ -637,21 +682,36 @@ shinyServer(function(input, output, session) {
                                          to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                          by=input_interval*60), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     names(arrivals_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
-    mytime <- arrivals_table[,1]
-    myvalue <- arrivals_table[,-1]
-    xts(myvalue,order.by=mytime,tz='Asia/Singapore')
+    arrivals_table
   })  
-  
+  arrivals_plot_data <- reactive({
+    mytime <- arrivals_data()[,1]
+    myvalue <- arrivals_data()[,-1]
+    xts(myvalue,order.by=mytime,tz='Asia/Singapore')
+  })
   output$arrivals_plot <- renderDygraph({ ####
-    title_plot <- paste("Number of arrivals per", input$input_interval, "minute intervals") 
+    title_plot <- paste("Number of arrivals per", input_interval(), "minute intervals") 
     dygraph(arrivals_plot_data(), main=title_plot) %>% 
-      dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE) %>%
+      dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.4, hideOnMouseOut = FALSE) %>%
       dyLegend(labelsSeparateLines=T, width=170) %>%
       dyAxis("y", label="No. vehicles observed") %>%
       dyAxis("x", label="Start of interval") %>% 
       dyOptions(useDataTimezone = TRUE)
   })
-  
+  output$arrivals_plot_cum <- renderDygraph({
+    arr <- arrivals_plot_data()[1:nrow(arrivals_plot_data())-1,] ###### NOTE that we use the arrivals_plot_data from line 47 above
+    arr_cum <- arr
+    for (i in 2:nrow(arr)) arr_cum[i,] <- colSums(arr[1:i,])
+    for (i in 1:ncol(arr_cum)) arr_cum[,i] <- arr_cum[,i]/colSums(arr)[i]
+    title_plot <- paste("Cumulative arrivals per", input_interval(), "minute intervals") 
+    dygraph(arr_cum, main=title_plot,width=100) %>% 
+      dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.4, hideOnMouseOut = FALSE) %>%
+      dyLegend(labelsSeparateLines=T, show='follow',showZeroValues=T,width=150) %>%
+      dyAxis("y", label="Fraction") %>%
+      dyAxis("x", label="Start of interval") %>%
+      dyOptions(useDataTimezone = TRUE) 
+    
+  })
   ### HANDLING  
   data_handling <- reactive({
     handling_temp <- dat[!is.na(dat[,"htime"]) & dat[,"htime"]>0,]
