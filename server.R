@@ -530,60 +530,60 @@ shinyServer(function(input, output, session) {
   )
   
   ### Sidebar filters
-#   delayDefault <- reactiveValues(default=0)
-#   observeEvent(input$update_side,{
-#     delayDefault$default <- input$update_side
-#   })
+  delayDefault <- reactiveValues(default=0)
+  observeEvent(input$update_side,{
+    delayDefault$default <- input$update_side
+  })
   
-  input_date <- eventReactive(input$update_side,{
+  input_date_event <- eventReactive(input$update_side,{
     if (input$mall_filter=='Mall 1') temp <- input$date_filter_1
     if (input$mall_filter=='Mall 2') temp <- input$date_filter_2
     if (input$mall_filter=='Both malls') temp <- input$date_filter_12
     temp
   })
   
-#   input_date <- reactive({
-#     if (delayDefault$default==0) {
-#       input$date_filter_1
-#     }
-#     else{
-#       input_date_event()
-#     }
-#   })
+  input_date <- reactive({
+    if (delayDefault$default==0) {
+      input$date_filter_1
+    }
+    else{
+      input_date_event()
+    }
+  })
   
-  input_time <- eventReactive(input$update_side,{
+  input_time_event <- eventReactive(input$update_side,{
     c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':01:00'))
   })
   
-#   input_time <- reactive({
-#     if (delayDefault$default==0){
-#       c('6:00:00','18:00:00')
-#     }
-#     else{
-#       input_time_event()
-#     }
-#   })
+  input_time <- reactive({
+    if (delayDefault$default==0){
+      c('6:00:00','18:00:00')
+    }
+    else{
+      input_time_event()
+    }
+  })
     
   
   ### VEHICLES IN THE SYSTEM
-#   delayDefault_sys <- reactiveValues(default=0)
-#   observeEvent(input$update_sys,{
-#     delayDefault_sys$default <- input$update_sys
-#   })
+  delayDefault_sys <- reactiveValues(default=0)
+  observeEvent(input$update_sys,{
+    delayDefault_sys$default <- input$update_sys
+  })
   park_location <- eventReactive(input$update_sys,{
     input$park_location
   })
-#   park_location <- reactive({
-#     if (delayDefault_sys$default==0) c('street','LB','car_park')
-#     else park_location_event()
-#   })
-  mall_filter <- eventReactive(input$update_side,{
+  park_location <- reactive({
+    if (delayDefault_sys$default==0) c('street','LB','car_park')
+    else park_location_event()
+  })
+  mall_filter_event <- eventReactive(input$update_side,{
     input$mall_filter
   })
-#   mall_filter <- reactive({
-#     if (delayDefault$default==0) 'Mall 1'
-#     else mall_filter_event()
-#   })
+  mall_filter <- reactive({
+    if (delayDefault$default==0) 'Mall 1'
+    else mall_filter_event()
+  })
   data_in_sys <- reactive({
     temp <- dat
     temp <- subset(temp, temp$date %in% input_date())
@@ -599,10 +599,10 @@ shinyServer(function(input, output, session) {
     names(no_agents)[1] <- "time"
     no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     no_agents <- no_agents[order(no_agents[,"time"] ),]
-#     while (max(table(no_agents[,"time"])) >1) {
-#       for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
-#       no_agents <- no_agents[order(no_agents[,"time"] ),]
-#     }
+    while (max(table(no_agents[,"time"])) >1) {
+      for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
+      no_agents <- no_agents[order(no_agents[,"time"] ),]
+    }
     
     no_agents[,2] <- as.numeric(no_agents[,2])
     no_agents[,3] <- NA
@@ -635,7 +635,7 @@ shinyServer(function(input, output, session) {
       dyLegend(labelsSeparateLines=T, width=170) %>%
       dyAxis("y", label="No. goods vehicles") %>%
       dyAxis("x", label="Time") %>% 
-      dyOptions(useDataTimezone = T)
+      dyOptions(useDataTimezone = T,stepPlot=T)
     if (mall_filter() == 'Mall 1'){
       stepplot <- dyLimit(stepplot, 6, color = 'red')
     }
