@@ -726,8 +726,8 @@ shinyServer(function(input, output, session) {
   
   
   
-  ### DWELLING
-  ## dwelling time distribution
+  ### DWELL
+  ## dwell time distribution
   output$hist_dwell <- renderPlot({
     dwell_temp <- dat[!is.na(dat[,"dtime"]),]
     dwell_temp <- dwell_temp[is.na(dwell_temp[,"service"]),]
@@ -738,7 +738,7 @@ shinyServer(function(input, output, session) {
 #                          hour(dwell_temp$entry_time)>=input$time_filter[1]&hour(dwell_temp$entry_time)<=input$time_filter[2])
     ggplot(data=dwell_temp,aes(dtime)) +
       geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Dwelling time distribution") + theme_bw() + xlab("time (minutes)")
+      ggtitle("Dwell time distribution") + theme_bw() + xlab("time (minutes)")
   })
   
   

@@ -44,7 +44,7 @@ sidebar <- dashboardSidebar(
              menuSubItem('Arrivals',tabName='arrivals'),
              menuSubItem('Handling',tabName='handling'),
              menuSubItem('Queueing',tabName='queueing'),
-             menuSubItem('Dwelling',tabName='dwelling'),
+             menuSubItem('Dwell',tabName='dwell'),
              selectInput("mall_filter", "Mall Selection:", 
                          choices=c("Mall 1","Mall 2","Both malls"),
                          selected='Mall 1'),
@@ -430,7 +430,7 @@ body <- dashboardBody(
                      plotOutput("hist_queue")
               )
             )),
-    tabItem(tabName='dwelling',
+    tabItem(tabName='dwell',
             fluidRow(
               column(width=12,solidHeader=T,
                   plotOutput("hist_dwell")
