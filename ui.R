@@ -32,14 +32,14 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem('Home',tabName='home',icon=icon('dashboard'), 
              menuSubItem('Welcome',tabName='welcome'),
-             menuSubItem('Data Description',tabName='dataDescr'),
              menuSubItem('Large Urban Traffic Generators',tabName='traffGen'),
              menuSubItem('Authors',tabName='authors'),
              menuSubItem('Acknowledgement',tabName='acknow')),
-    menuItem('Case Studies Summaries',tabName='summaries',icon=icon('th'),
+    menuItem('Case Studies',tabName='summaries',icon=icon('th'),
              menuSubItem('Mall 1',tabName='mall1'),
              menuSubItem('Mall 2',tabName='mall2')),
-    menuItem('Visuals',tabName='visuals',icon=icon('bar-chart'),
+    menuItem('Data Description',tabName='dataDescr',icon=icon('file-text-o')),
+    menuItem('Data Analysis',tabName='visuals',icon=icon('bar-chart'),
              menuSubItem('System Performance',tabName='sysPerf'),
              menuSubItem('Arrivals',tabName='arrivals'),
              menuSubItem('Handling',tabName='handling'),
@@ -70,7 +70,10 @@ sidebar <- dashboardSidebar(
 #              column(width=2),
 #              actionButton(inputId='update_side',label=' Update Visuals',icon=icon('refresh',lib='glyphicon')),
              br())
-  ))
+  ),
+br(),br(),
+column(1),
+imageOutput('sutd'))
 
 body <- dashboardBody(
   tabItems(
@@ -201,7 +204,8 @@ body <- dashboardBody(
             )),
     
     tabItem(tabName='authors',
-            h3("Singapore University of Technology and Design (SUTD) Research Team"),
+            h3("Sustainable Urban Mobility Research Lab"),
+            h5(a("http://mobility.sutd.edu.sg/",href='http://mobility.sutd.edu.sg/')),
             tags$ul(  
               tags$li("Lynette Cheah, Professor (PI)."),
               tags$li("Ngai-Man Cheung, Professor."),
@@ -353,7 +357,7 @@ body <- dashboardBody(
               )
             ),
             fluidRow(
-              column(width=12,solidHeader=T,
+              box(width=12,solidHeader=T,
                      # textOutput('step_plot_text')
                   dygraphOutput("step_plot")
               )
@@ -382,26 +386,27 @@ body <- dashboardBody(
               ))),
     tabItem(tabName='handling',
             fluidRow(
-              box(width=8,status='warning',
+              box(width=12,status='warning',
                   selectInput("which_visualization_handling", "Select the visualization:", 
                               choices= c("Handling times distribution"="htime_distribution", 
                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
                                          "Handling time by arrival time"='htime_arrival'), 
                               selected="htime_distribution")
-                  ),
-              box(width=4,status='warning',
-                  checkboxInput("byparkloc", "Differentiate by park location"))
+                  )
+#               ,
+#               box(width=4,status='warning',
+#                   checkboxInput("byparkloc", "Differentiate by park location"))
             ),
-            fluidRow(
-              conditionalPanel(
-                condition = "input.byparkloc",
-                box(width=12,status='warning',
-                    checkboxGroupInput("park", "Park location:", 
-                                       c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
-                                       selected = c('street','LB','car_park'),inline=TRUE)
-                    )
-              )
-            ),
+#             fluidRow(
+#               conditionalPanel(
+#                 condition = "input.byparkloc",
+#                 box(width=12,status='warning',
+#                     checkboxGroupInput("park", "Park location:", 
+#                                        c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
+#                                        selected = c('street','LB','car_park'),inline=TRUE)
+#                     )
+#               )
+#             ),
             fluidRow(
               column(width=12,solidHeader=T,
                   conditionalPanel(

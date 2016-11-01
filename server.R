@@ -36,6 +36,11 @@ malls <- read.csv("data/shopping_malls.csv", stringsAsFactors = FALSE, header=T,
 
 ##############################################################################################################
 shinyServer(function(input, output, session) {
+  output$sutd <- renderImage({
+    filename <- normalizePath(file.path('./images/sutdlogo.jpg', fsep=''))
+    list(src=filename,
+         width=170)
+  }, deleteFile = F)
   ### DATA DESCRIPTION 
   #delivery
   output$nrows_delivery_var <- reactive({
@@ -674,11 +679,11 @@ shinyServer(function(input, output, session) {
   data_handling <- reactive({
     handling_temp <- dat[!is.na(dat[,"htime"]) & dat[,"htime"]>0,]
     handling_temp <- handling_temp[is.na(handling_temp[,"service"]),]
-    if (input$byparkloc == T) { #filtering by parking location
-      handling_temp <- handling_temp[handling_temp[,"park_location"]==input$park & !is.na(handling_temp[,"park_location"]),]
-      handling_temp[,"filter"] <- handling_temp[,"park_location"]
-      handling_temp[,"filter"] <- as.factor(handling_temp[,"filter"])
-    } 
+#     if (input$byparkloc == T) { #filtering by parking location
+#       handling_temp <- handling_temp[handling_temp[,"park_location"]==input$park & !is.na(handling_temp[,"park_location"]),]
+#       handling_temp[,"filter"] <- handling_temp[,"park_location"]
+#       handling_temp[,"filter"] <- as.factor(handling_temp[,"filter"])
+#     } 
     if (input$mall_filter=="Mall 1") handling_temp <- subset(handling_temp,handling_temp$mall=="np")
     if (input$mall_filter=='Mall 2') handling_temp <- subset(handling_temp,handling_temp$mall=='tp')
     handling_temp <- subset(handling_temp, handling_temp$date %in% input_date())
@@ -694,10 +699,10 @@ shinyServer(function(input, output, session) {
   
   output$hist_htime <- renderPlot({
     temp <- data_handling()
-    ggplot(temp,aes(x=htime, fill=filter)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Handling time distribution") + theme_bw() + xlab("time (minutes)") + 
-      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20))
+    ggplot(temp,aes(x=htime)) +
+      geom_histogram(binwidth=max(temp$htime)/50,alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Handling time distribution") + theme_bw() + xlab("Time (minutes)") + ylab('Count') +
+      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20,face='bold'))
     #geom_vline(aes(xintercept=10), colour="#990000", linetype="dashed") +
   })
   
@@ -718,9 +723,13 @@ shinyServer(function(input, output, session) {
   output$hist_queue <- renderPlot({
     temp <- data_queue()
     ggplot(temp,aes(x=qtime)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Queueing time distribution") + theme_bw() + xlab("time (minutes)") +
-      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20))
+      geom_histogram(binwidth=max(temp$qtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Queueing time distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Count") +
+      theme(axis.title.x = element_text(size=16),
+            axis.text.x  = element_text(size=12),
+            axis.title.y = element_text(size=16),
+            axis.text.y  = element_text(size=12),
+            plot.title = element_text(size=20, face='bold'))
   })
   
   
@@ -729,16 +738,21 @@ shinyServer(function(input, output, session) {
   ### DWELL
   ## dwell time distribution
   output$hist_dwell <- renderPlot({
-    dwell_temp <- dat[!is.na(dat[,"dtime"]),]
-    dwell_temp <- dwell_temp[is.na(dwell_temp[,"service"]),]
-    if (input$mall_filter=="Mall 1") dwell_temp <- subset(dwell_temp,dwell_temp$mall=="np")
-    if (input$mall_filter=='Mall 2') dwell_temp <- subset(dwell_temp,dwell_temp$mall=='tp')
-    dwell_temp <- subset(dwell_temp, dwell_temp$date %in% input_date())
-#     dwell_temp <- subset(dwell_temp, 
-#                          hour(dwell_temp$entry_time)>=input$time_filter[1]&hour(dwell_temp$entry_time)<=input$time_filter[2])
-    ggplot(data=dwell_temp,aes(dtime)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Dwell time distribution") + theme_bw() + xlab("time (minutes)")
+    temp <- dat[!is.na(dat[,"dtime"]),]
+    temp <- temp[is.na(temp[,"service"]),]
+    if (input$mall_filter=="Mall 1") temp <- subset(temp,temp$mall=="np")
+    if (input$mall_filter=='Mall 2') temp <- subset(temp,temp$mall=='tp')
+    temp <- subset(temp, temp$date %in% input_date())
+#     temp <- subset(temp, 
+#                          hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    ggplot(data=temp,aes(dtime)) +
+      geom_histogram(binwidth = max(temp$dtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Dwell time distribution") + theme_bw() + xlab("Time (minutes)") + ylab('Count') +
+      theme(axis.title.x = element_text(size=16),
+            axis.text.x  = element_text(size=12),
+            axis.title.y = element_text(size=16),
+            axis.text.y  = element_text(size=12),
+            plot.title = element_text(size=20, face='bold'))
   })
   
   
