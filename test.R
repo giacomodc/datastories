@@ -1,12 +1,10 @@
-dat <- read.csv('data/merged.csv',stringsAsFactors = FALSE, header=T)
+dat <- read.csv('data/final.csv',stringsAsFactors = FALSE, header=T)
 dat[,"entry_time"] <- as.POSIXct(dat[,"entry_time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
 dat[,"exit_time"] <- as.POSIXct(dat[,"exit_time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
-input_date <- c("2016-01-21","2016-01-22")
 input_time <- c('6:00:00','18:00:00')
+input_date <- c('2015-06-24','2015-06-25')
 time_filter <- c(6,18)
-input_interval <- 50
 park_location <- NULL
-mall_filter <- 'Mall 2'
 start <- Sys.time()
 
 
@@ -50,7 +48,14 @@ for (i in 1:length(dates)){
 }
 system_table[1,-1] <- 0
 system_table[-1] <- na.locf(system_table[-1])
+write.csv(system_table,file='sys_perf.csv',row.names=F)
+
+
+system_table <- read.csv('data/sys_perf.csv',stringsAsFactors = F, header=T)
+names(system_table) <- c('time',unique(dat$date))
+system_table$time <- as.POSIXct(system_table$time, format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
 system_table <- xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
+system_table <- system_table[,input_date]
 
 stepplot <- dygraph(system_table,main="Total number of goods vehicles in the system") %>% 
   dyHighlight(highlightCircleSize = 3, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE) %>%

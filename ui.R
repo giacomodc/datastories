@@ -13,11 +13,11 @@ library(DT)
 library(shinydashboard)
 library(readr)
 
-
 vardescr <- read.table("data/vardescr.txt", sep="\t", stringsAsFactors = F)
 tamp_retailers <- read.csv("data/tamp_retailers.csv", stringsAsFactors = F, header=T)
 tampString <- read_file('text/tamp_overview.txt')
 northpString <- read_file('text/np_overview.txt')
+acknowString <- read_file('text/acknow.txt')
 welcomeString <- read_file('text/welcome.txt')
 dataDescString <- read_file('text/dataDesc.txt')
 var1String <- read_file('text/var1Desc.txt')
@@ -32,13 +32,14 @@ sidebar <- dashboardSidebar(
   sidebarMenu(
     menuItem('Home',tabName='home',icon=icon('dashboard'), 
              menuSubItem('Welcome',tabName='welcome'),
-             menuSubItem('Data Description',tabName='dataDescr'),
              menuSubItem('Large Urban Traffic Generators',tabName='traffGen'),
-             menuSubItem('Authors',tabName='authors')),
-    menuItem('Case Studies Summaries',tabName='summaries',icon=icon('th'),
+             menuSubItem('Authors',tabName='authors'),
+             menuSubItem('Acknowledgement',tabName='acknow')),
+    menuItem('Case Studies',tabName='summaries',icon=icon('th'),
              menuSubItem('Mall 1',tabName='mall1'),
              menuSubItem('Mall 2',tabName='mall2')),
-    menuItem('Visuals',tabName='visuals',icon=icon('bar-chart'),
+    menuItem('Data Description',tabName='dataDescr',icon=icon('file-text-o')),
+    menuItem('Data Analysis',tabName='visuals',icon=icon('bar-chart'),
              menuSubItem('System Performance',tabName='sysPerf'),
              menuSubItem('Arrivals',tabName='arrivals'),
              menuSubItem('Handling',tabName='handling'),
@@ -66,12 +67,13 @@ sidebar <- dashboardSidebar(
                                                              "21 Jan 2016 (Thu)"="2016-01-21", 
                                                              "22 Jan 2015 (Fri)"="2016-01-22"),
                                                  selected = c('2015-06-24','2015-06-25','2015-06-26','2016-01-21','2016-01-22'))),
-             sliderInput("time_filter", "Time Range:",format='##:00',
-                         min = 6, max = 18, step=1, value = c(6,18)),
-             column(width=2),
-             actionButton(inputId='update_side',label=' Update Visuals',icon=icon('refresh',lib='glyphicon')),
-             br(),br())
-  ))
+#              column(width=2),
+#              actionButton(inputId='update_side',label=' Update Visuals',icon=icon('refresh',lib='glyphicon')),
+             br())
+  ),
+br(),br(),
+column(1),
+imageOutput('sutd'))
 
 body <- dashboardBody(
   tabItems(
@@ -202,26 +204,25 @@ body <- dashboardBody(
             )),
     
     tabItem(tabName='authors',
-            h3("Singapore University of Technology and Design (SUTD) Research Team"),
+            h3("Sustainable Urban Mobility Research Lab"),
+            h5(a("http://mobility.sutd.edu.sg/",href='http://mobility.sutd.edu.sg/')),
             tags$ul(  
               tags$li("Lynette Cheah, Professor (PI)."),
               tags$li("Ngai-Man Cheung, Professor."),
               tags$li("Costas Courcoubetis, Professor."),
-              tags$li("Laura Guerrero, Research Fellow."),
-              tags$li(a("Giacomo Dalla Chiara, Ph.D. candidate.", href="http://esd.sutd.edu.sg/phd-students/giacomo-dalla-chiara/"))
+              tags$li(a("Giacomo Dalla Chiara, Ph.D. candidate.", href="http://esd.sutd.edu.sg/phd-students/giacomo-dalla-chiara/")),
+              tags$li("Guo Ziqi, Undergraduate Research Assistant."),
+              tags$li("Ding Jiatao, Undergraduate Research Assistant."),
+              tags$li("Sun Xin, Postdoctoral Researcher.")
             )),
-    tabItem(tabName='mall1',
-            fluidRow(
-              box(width = 8,
-                  height = 380,
-                  imageOutput('northp_map',height='50px')),
-              box(width = 4,
-                  height = 380,
-                  imageOutput("northp_overview", height = '50px'))
+    tabItem(tabName='acknow',
+            HTML(markdownToHTML(fragment.only=TRUE, text=acknowString))
             ),
+    tabItem(tabName='mall1',
             fluidRow(
               tabBox(width = 12,
                      tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=northpString))),
+                     tabPanel('Map',imageOutput('northp_map')),
                      tabPanel('Vehicle Count',
                               fluidRow(
                                 br(),
@@ -283,16 +284,9 @@ body <- dashboardBody(
     ),
     tabItem(tabName='mall2',
             fluidRow(
-              box(width = 8,
-                  height = 380,
-                  imageOutput('tamp_map',height='50px')),
-              box(width = 4,
-                  height = 380,
-                  imageOutput("tamp_overview", height = '50px'))
-            ),
-            fluidRow(
               tabBox(width = 12,
                      tabPanel('Overview',HTML(markdownToHTML(fragment.only=TRUE, text=tampString))),
+                     tabPanel('Map',imageOutput('tamp_map')),
                      tabPanel('Vehicle Count',
                               fluidRow(
                                 br(),
@@ -359,12 +353,12 @@ body <- dashboardBody(
                                      choices = c("...inside the loading bay"="LB",
                                                  "...inside the passenger carpark"="car_park", 
                                                  "...on the street"="street"),
-                                     selected = c('street','LB','car_park'),inline=TRUE),
-                  actionButton(inputId='update_sys',label=' Update Visuals',icon=icon('refresh',lib='glyphicon'))
+                                     selected = c('street','LB','car_park'),inline=TRUE)
               )
             ),
             fluidRow(
-              column(width=12,solidHeader=T,
+              box(width=12,solidHeader=T,
+                     # textOutput('step_plot_text')
                   dygraphOutput("step_plot")
               )
             ),
@@ -374,8 +368,7 @@ body <- dashboardBody(
     tabItem(tabName='arrivals',
             fluidRow(
               box(width=12,status='warning',
-                  sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10),
-                  actionButton(inputId='update_arrivals',label=' Update Visuals',icon=icon('refresh',lib='glyphicon'))
+                  sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
               )
             ),
             tabBox(width=12,
@@ -393,26 +386,27 @@ body <- dashboardBody(
               ))),
     tabItem(tabName='handling',
             fluidRow(
-              box(width=8,status='warning',
+              box(width=12,status='warning',
                   selectInput("which_visualization_handling", "Select the visualization:", 
                               choices= c("Handling times distribution"="htime_distribution", 
                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
                                          "Handling time by arrival time"='htime_arrival'), 
                               selected="htime_distribution")
-                  ),
-              box(width=4,status='warning',
-                  checkboxInput("byparkloc", "Differentiate by park location"))
+                  )
+#               ,
+#               box(width=4,status='warning',
+#                   checkboxInput("byparkloc", "Differentiate by park location"))
             ),
-            fluidRow(
-              conditionalPanel(
-                condition = "input.byparkloc",
-                box(width=12,status='warning',
-                    checkboxGroupInput("park", "Park location:", 
-                                       c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
-                                       selected = c('street','LB','car_park'),inline=TRUE)
-                    )
-              )
-            ),
+#             fluidRow(
+#               conditionalPanel(
+#                 condition = "input.byparkloc",
+#                 box(width=12,status='warning',
+#                     checkboxGroupInput("park", "Park location:", 
+#                                        c("Street"="street", "Loading bay"="LB", "Carpark"="car_park"),
+#                                        selected = c('street','LB','car_park'),inline=TRUE)
+#                     )
+#               )
+#             ),
             fluidRow(
               column(width=12,solidHeader=T,
                   conditionalPanel(

@@ -12,7 +12,7 @@ library(DT)
 library(reshape2)
 
 #load dataset
-dat <- read.csv('data/merged.csv',stringsAsFactors = FALSE, header=T)
+dat <- read.csv('data/final.csv',stringsAsFactors = FALSE, header=T)
 #create a empty factor variable to filter the data
 dat[,"filter"] <- "no_filter"
 dat[,"filter"] <- as.factor(dat[,"filter"])   
@@ -24,6 +24,7 @@ dat[,"stop_handling"] <- as.POSIXct(dat[,"stop_handling"], format="%Y-%m-%d %H:%
 
 vardescr <- read.table("data/vardescr.txt", sep="\t", stringsAsFactors = F)
 tamp_retailers <- read.csv("data/tamp_retailers.csv", stringsAsFactors = FALSE, header=T)
+system_table <- read.csv('data/sys_perf.csv',stringsAsFactors = FALSE, header=T)
 
 #MAP case studies:
 m <- leaflet()
@@ -35,6 +36,11 @@ malls <- read.csv("data/shopping_malls.csv", stringsAsFactors = FALSE, header=T,
 
 ##############################################################################################################
 shinyServer(function(input, output, session) {
+  output$sutd <- renderImage({
+    filename <- normalizePath(file.path('./images/sutdlogo.jpg', fsep=''))
+    list(src=filename,
+         width=170)
+  }, deleteFile = F)
   ### DATA DESCRIPTION 
   #delivery
   output$nrows_delivery_var <- reactive({
@@ -153,14 +159,14 @@ shinyServer(function(input, output, session) {
   
   ### NORTHPOINT IMAGE
   output$northp_map <- renderImage({
-    filename <- normalizePath(file.path('./images/northp_map.jpg', fsep=''))
+    filename <- normalizePath(file.path('./images/northp.jpg', fsep=''))
     list(src=filename,
          height=350)
   }, deleteFile = F)
   
   ### TAMPINES IMAGE
   output$tamp_map <- renderImage({
-    filename <- normalizePath(file.path('./images/tamp_map.jpg', fsep=''))
+    filename <- normalizePath(file.path('./images/tamp.jpg', fsep=''))
     list(src=filename,
          height=350)
   }, deleteFile = F)
@@ -355,9 +361,9 @@ shinyServer(function(input, output, session) {
     temp
   })
   
-  input_time <- reactive({
-    c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':00:00'))
-  })
+#   input_time <- reactive({
+#     c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':00:00'))
+#   })
   
   ### DATA SUMMARY TAMPINES
   ## Tampines overview
@@ -530,104 +536,61 @@ shinyServer(function(input, output, session) {
   )
   
   ### Sidebar filters
-  delayDefault <- reactiveValues(default=0)
-  observeEvent(input$update_side,{
-    delayDefault$default <- input$update_side
-  })
+#   delayDefault <- reactiveValues(default=0)
+#   observeEvent(input$update_side,{
+#     delayDefault$default <- input$update_side
+#   })
   
-  input_date_event <- eventReactive(input$update_side,{
+  input_date <- reactive({
     if (input$mall_filter=='Mall 1') temp <- input$date_filter_1
     if (input$mall_filter=='Mall 2') temp <- input$date_filter_2
     if (input$mall_filter=='Both malls') temp <- input$date_filter_12
     temp
   })
   
-  input_date <- reactive({
-    if (delayDefault$default==0) {
-      input$date_filter_1
-    }
-    else{
-      input_date_event()
-    }
-  })
+#   input_date <- reactive({
+#     if (delayDefault$default==0) {
+#       input$date_filter_1
+#     }
+#     else{
+#       input_date_event()
+#     }
+#   })
   
-  input_time_event <- eventReactive(input$update_side,{
-    c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':01:00'))
-  })
+#   input_time_event <- eventReactive(input$update_side,{
+#     c(paste0(input$time_filter[1],':00:00'),paste0(input$time_filter[2],':01:00'))
+#   })
   
-  input_time <- reactive({
-    if (delayDefault$default==0){
-      c('6:00:00','18:00:00')
-    }
-    else{
-      input_time_event()
-    }
-  })
+#   input_time <- reactive({
+#     if (delayDefault$default==0){
+#       c('6:00:00','18:00:00')
+#     }
+#     else{
+#       input_time_event()
+#     }
+#   })
     
   
   ### VEHICLES IN THE SYSTEM
-  delayDefault_sys <- reactiveValues(default=0)
-  observeEvent(input$update_sys,{
-    delayDefault_sys$default <- input$update_sys
-  })
-  park_location <- eventReactive(input$update_sys,{
+#   delayDefault_sys <- reactiveValues(default=0)
+#   observeEvent(input$update_sys,{
+#     delayDefault_sys$default <- input$update_sys
+#   })
+  park_location <- reactive({
     input$park_location
   })
-  park_location <- reactive({
-    if (delayDefault_sys$default==0) c('street','LB','car_park')
-    else park_location_event()
-  })
-  mall_filter_event <- eventReactive(input$update_side,{
+  mall_filter <- reactive({
     input$mall_filter
   })
-  mall_filter <- reactive({
-    if (delayDefault$default==0) 'Mall 1'
-    else mall_filter_event()
-  })
+#   mall_filter <- reactive({
+#     if (delayDefault$default==0) 'Mall 1'
+#     else mall_filter_event()
+#   })
   data_in_sys <- reactive({
-    temp <- dat
-    temp <- subset(temp, temp$date %in% input_date())
-    temp <- subset(temp, hour(temp$entry_time)>=6&hour(temp$entry_time)<=18)
-    temp <- temp[!is.na(temp[,"entry_time"]) & !is.na(temp[,"exit_time"]),c("park_location", "entry_time", "exit_time", "dtime")]
-    if (!is.null(input$park_location)){
-      temp <- subset(temp,temp$park_location %in% input$park_location)
-    }
-    entries <- data.frame(cbind(as.character(temp[,"entry_time"]), rep(1,length(temp[,"entry_time"]))), stringsAsFactors=F)
-    exits <- data.frame(cbind(as.character(temp[,"exit_time"]), rep(-1,length(temp[,"exit_time"]))), stringsAsFactors=F)
-    
-    no_agents <- rbind(entries, exits) 
-    names(no_agents)[1] <- "time"
-    no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
-    no_agents <- no_agents[order(no_agents[,"time"] ),]
-    while (max(table(no_agents[,"time"])) >1) {
-      for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
-      no_agents <- no_agents[order(no_agents[,"time"] ),]
-    }
-    
-    no_agents[,2] <- as.numeric(no_agents[,2])
-    no_agents[,3] <- NA
-    no_agents[1,3] <- no_agents[1,2]
-    for (j in 2:nrow(no_agents)) no_agents[j,3] <- no_agents[j-1,3]+no_agents[j,2]
-    
-    no_agents <- no_agents[,c(1,3)]
-    names(no_agents) <- c('time','number')
-    no_agents$date <- date(no_agents$time)
-    year(no_agents$time) <- 2016
-    month(no_agents$time) <- 1
-    day(no_agents$time) <- 1
-    
-    system_table <- no_agents
-    dates <- unique(system_table$date)
-    system_table[2] <- NULL
-    system_table[2] <- NULL
-    for (i in 1:length(dates)){
-      temp <- subset(no_agents,no_agents$date==dates[i])
-      system_table <- merge(system_table,temp[c(1,2)],by='time',all.x=TRUE)
-      names(system_table)[length(names(system_table))] <- as.character(dates[i])
-    }
-    system_table[1,-1] <- 0
-    system_table[-1] <- na.locf(system_table[-1])
-    xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
+    names(system_table) <- c('time',unique(dat$date))
+    system_table$time <- as.POSIXct(system_table$time, format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+    system_table <- xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
+    system_table[,input_date()]
   })
   output$step_plot <- renderDygraph({
     stepplot <- dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
@@ -651,35 +614,35 @@ shinyServer(function(input, output, session) {
   
   
   ### ARRIVALS
-  delayDefault_arrivals <- reactiveValues(default=0)
-  observeEvent(input$update_arrivals,{
-    delayDefault_arrivals$default <- input$update_arrivals
-  })
-  input_interval_event <- eventReactive(input$update_arrivals,{
+#   delayDefault_arrivals <- reactiveValues(default=0)
+#   observeEvent(input$update_arrivals,{
+#     delayDefault_arrivals$default <- input$update_arrivals
+#   })
+  input_interval <- reactive({
     input$input_interval
   })
-  input_interval <- reactive({
-    if (delayDefault_arrivals$default==0) 50
-    else input_interval_event()
-  })
-  
+#   input_interval <- reactive({
+#     if (delayDefault_arrivals$default==0) 50
+#     else input_interval_event()
+#   })
+#   
   arrivals_data <- reactive({ ####
     input_interval <- input_interval()
     arrivals_table <- data.frame(rep(NA, 
-                                     length(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                                to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                     length(seq(from = as.POSIXct(paste(input_date()[1], '6:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                                to = as.POSIXct(paste(input_date()[1], '18:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                                 by=input_interval*60))))
     for (i in 1:length(input_date())) {
-      breaks_vector <- seq(from = as.POSIXct(paste(input_date()[i], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                           to = as.POSIXct(paste(input_date()[i], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"),
+      breaks_vector <- seq(from = as.POSIXct(paste(input_date()[i], '6:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                           to = as.POSIXct(paste(input_date()[i], '18:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"),
                            by=input_interval*60)
       temp <- dat[!is.na(dat[,"date"]) & !is.na(dat[,"entry_time"]) & dat[,"date"]==input_date()[i],1:5]
       vector_arrivals <- data.frame(table(cut(temp$entry_time, breaks=breaks_vector)))[,2]
       if (length(vector_arrivals)<nrow(arrivals_table)) vector_arrivals <- c(vector_arrivals, rep(0, nrow(arrivals_table)-length(vector_arrivals)))
       arrivals_table <- cbind(arrivals_table, vector_arrivals)
     }
-    arrivals_table[,1] <- as.POSIXct(seq(from = as.POSIXct(paste(input_date()[1], input_time()[1]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
-                                         to = as.POSIXct(paste(input_date()[1], input_time()[2]), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+    arrivals_table[,1] <- as.POSIXct(seq(from = as.POSIXct(paste(input_date()[1], '6:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
+                                         to = as.POSIXct(paste(input_date()[1], '18:00:00'), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore"), 
                                          by=input_interval*60), format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
     names(arrivals_table) <- c("aaa", format(as.Date(input_date(), tz="Asia/Singapore"), format="%B %d %Y"))
     arrivals_table
@@ -716,17 +679,16 @@ shinyServer(function(input, output, session) {
   data_handling <- reactive({
     handling_temp <- dat[!is.na(dat[,"htime"]) & dat[,"htime"]>0,]
     handling_temp <- handling_temp[is.na(handling_temp[,"service"]),]
-    if (input$byparkloc == T) { #filtering by parking location
-      handling_temp <- handling_temp[handling_temp[,"park_location"]==input$park & !is.na(handling_temp[,"park_location"]),]
-      handling_temp[,"filter"] <- handling_temp[,"park_location"]
-      handling_temp[,"filter"] <- as.factor(handling_temp[,"filter"])
-    } 
+#     if (input$byparkloc == T) { #filtering by parking location
+#       handling_temp <- handling_temp[handling_temp[,"park_location"]==input$park & !is.na(handling_temp[,"park_location"]),]
+#       handling_temp[,"filter"] <- handling_temp[,"park_location"]
+#       handling_temp[,"filter"] <- as.factor(handling_temp[,"filter"])
+#     } 
     if (input$mall_filter=="Mall 1") handling_temp <- subset(handling_temp,handling_temp$mall=="np")
     if (input$mall_filter=='Mall 2') handling_temp <- subset(handling_temp,handling_temp$mall=='tp')
     handling_temp <- subset(handling_temp, handling_temp$date %in% input_date())
-    handling_temp <- subset(handling_temp, 
-                         hour(handling_temp$entry_time)>=input$time_filter[1]&hour(handling_temp$entry_time)<=input$time_filter[2])
-    
+#     handling_temp <- subset(handling_temp, 
+#                          hour(handling_temp$entry_time)>=input$time_filter[1]&hour(handling_temp$entry_time)<=input$time_filter[2])
     handling_temp
   })
   
@@ -737,10 +699,10 @@ shinyServer(function(input, output, session) {
   
   output$hist_htime <- renderPlot({
     temp <- data_handling()
-    ggplot(temp,aes(x=htime, fill=filter)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Handling time distribution") + theme_bw() + xlab("time (minutes)") + 
-      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20))
+    ggplot(temp,aes(x=htime)) +
+      geom_histogram(binwidth=max(temp$htime)/50,alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Handling time distribution") + theme_bw() + xlab("Time (minutes)") + ylab('Count') +
+      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20,face='bold'))
     #geom_vline(aes(xintercept=10), colour="#990000", linetype="dashed") +
   })
   
@@ -754,16 +716,20 @@ shinyServer(function(input, output, session) {
     if (input$mall_filter=="Mall 1") queue_temp <- subset(queue_temp,queue_temp$mall=="np")
     if (input$mall_filter=='Mall 2') queue_temp <- subset(queue_temp,queue_temp$mall=='tp')
     queue_temp <- subset(queue_temp, queue_temp$date %in% input_date())
-    queue_temp <- subset(queue_temp, 
-                         hour(queue_temp$entry_time)>=input$time_filter[1]&hour(queue_temp$entry_time)<=input$time_filter[2])
+#     queue_temp <- subset(queue_temp, 
+#                          hour(queue_temp$entry_time)>=input$time_filter[1]&hour(queue_temp$entry_time)<=input$time_filter[2])
     queue_temp
   }) #END of data_queue 
   output$hist_queue <- renderPlot({
     temp <- data_queue()
     ggplot(temp,aes(x=qtime)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Queueing time distribution") + theme_bw() + xlab("time (minutes)") +
-      theme(axis.title.x = element_text(size=16), axis.text.x  = element_text(size=12), axis.title.y = element_text(size=16), axis.text.y  = element_text(size=12), plot.title = element_text(size=20))
+      geom_histogram(binwidth=max(temp$qtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Queueing time distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Count") +
+      theme(axis.title.x = element_text(size=16),
+            axis.text.x  = element_text(size=12),
+            axis.title.y = element_text(size=16),
+            axis.text.y  = element_text(size=12),
+            plot.title = element_text(size=20, face='bold'))
   })
   
   
@@ -772,16 +738,21 @@ shinyServer(function(input, output, session) {
   ### DWELL
   ## dwell time distribution
   output$hist_dwell <- renderPlot({
-    dwell_temp <- dat[!is.na(dat[,"dtime"]),]
-    dwell_temp <- dwell_temp[is.na(dwell_temp[,"service"]),]
-    if (input$mall_filter=="Mall 1") dwell_temp <- subset(dwell_temp,dwell_temp$mall=="np")
-    if (input$mall_filter=='Mall 2') dwell_temp <- subset(dwell_temp,dwell_temp$mall=='tp')
-    dwell_temp <- subset(dwell_temp, dwell_temp$date %in% input_date())
-    dwell_temp <- subset(dwell_temp, 
-                         hour(dwell_temp$entry_time)>=input$time_filter[1]&hour(dwell_temp$entry_time)<=input$time_filter[2])
-    ggplot(data=dwell_temp,aes(dtime)) +
-      geom_histogram(binwidth = 1.5, alpha = 0.6, position="identity") +
-      ggtitle("Dwell time distribution") + theme_bw() + xlab("time (minutes)")
+    temp <- dat[!is.na(dat[,"dtime"]),]
+    temp <- temp[is.na(temp[,"service"]),]
+    if (input$mall_filter=="Mall 1") temp <- subset(temp,temp$mall=="np")
+    if (input$mall_filter=='Mall 2') temp <- subset(temp,temp$mall=='tp')
+    temp <- subset(temp, temp$date %in% input_date())
+#     temp <- subset(temp, 
+#                          hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    ggplot(data=temp,aes(dtime)) +
+      geom_histogram(binwidth = max(temp$dtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
+      ggtitle("Dwell time distribution") + theme_bw() + xlab("Time (minutes)") + ylab('Count') +
+      theme(axis.title.x = element_text(size=16),
+            axis.text.x  = element_text(size=12),
+            axis.title.y = element_text(size=16),
+            axis.text.y  = element_text(size=12),
+            plot.title = element_text(size=20, face='bold'))
   })
   
   
