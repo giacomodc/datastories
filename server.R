@@ -587,10 +587,50 @@ shinyServer(function(input, output, session) {
 #     else mall_filter_event()
 #   })
   data_in_sys <- reactive({
-    names(system_table) <- c('time',unique(dat$date))
-    system_table$time <- as.POSIXct(system_table$time, format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
-    system_table <- xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
-    system_table[,input_date()]
+    temp <- dat
+    temp <- subset(temp, temp$date %in% input_date())
+    temp <- subset(temp, hour(temp$entry_time)>=6&hour(temp$entry_time)<=18)
+    temp <- temp[!is.na(temp[,"entry_time"]) & !is.na(temp[,"exit_time"]),c("park_location", "entry_time", "exit_time", "dtime")]
+    if (!is.null(input$park_location)){
+      temp <- subset(temp,temp$park_location %in% input$park_location)
+    }
+    entries <- data.frame(cbind(as.character(temp[,"entry_time"]), rep(1,length(temp[,"entry_time"]))), stringsAsFactors=F)
+    exits <- data.frame(cbind(as.character(temp[,"exit_time"]), rep(-1,length(temp[,"exit_time"]))), stringsAsFactors=F)
+    
+    no_agents <- rbind(entries, exits) 
+    names(no_agents)[1] <- "time"
+    no_agents[,"time"] <- as.POSIXct(no_agents[,"time"], format="%Y-%m-%d %H:%M:%S", tz="Asia/Singapore")
+    no_agents <- no_agents[order(no_agents[,"time"] ),]
+    while (max(table(no_agents[,"time"])) >1) {
+      for (i in 2:(nrow(no_agents)-1)) if (no_agents[i,"time"]==no_agents[i-1,"time"]) no_agents[i,"time"] <- no_agents[i,"time"]+1
+      no_agents <- no_agents[order(no_agents[,"time"] ),]
+    }
+    
+    no_agents[,2] <- as.numeric(no_agents[,2])
+    no_agents[,3] <- NA
+    no_agents[1,3] <- no_agents[1,2]
+    for (j in 2:nrow(no_agents)) no_agents[j,3] <- no_agents[j-1,3]+no_agents[j,2]
+    
+    no_agents <- no_agents[,c(1,3)]
+    names(no_agents) <- c('time','number')
+    no_agents$date <- date(no_agents$time)
+    year(no_agents$time) <- 2016
+    month(no_agents$time) <- 1
+    day(no_agents$time) <- 1
+    
+    system_table <- no_agents
+    dates <- unique(system_table$date)
+    system_table[2] <- NULL
+    system_table[2] <- NULL
+    for (i in 1:length(dates)){
+      temp <- subset(no_agents,no_agents$date==dates[i])
+      system_table <- merge(system_table,temp[c(1,2)],by='time',all.x=TRUE)
+      names(system_table)[length(names(system_table))] <- as.character(dates[i])
+    }
+    system_table[1,-1] <- 0
+    system_table[-1] <- na.locf(system_table[-1])
+    xts(system_table[,-1],order.by=system_table[,1],tz='Asia/Singapore')
+    
   })
   output$step_plot <- renderDygraph({
     stepplot <- dygraph(data_in_sys(), main="Total number of goods vehicles in the system") %>% 
@@ -706,12 +746,26 @@ shinyServer(function(input, output, session) {
     #geom_vline(aes(xintercept=10), colour="#990000", linetype="dashed") +
   })
   
+  output$cum_htime <- renderPlot({
+    temp <- data_handling()
+    ggplot(temp,aes(htime,linetype=mall)) + stat_ecdf(size=1) +
+      ggtitle("Handling time cumulative distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Fraction")+
+      theme(
+        axis.title.x = element_text(size=20), 
+        axis.text.x  = element_text(size=17), 
+        axis.title.y = element_text(size=20), 
+        axis.text.y  = element_text(size=17), 
+        plot.title = element_text(size=23, face="bold") ) +
+      scale_x_continuous(breaks = round(seq(min(temp$htime), max(temp$htime), by = max(temp$htime)/10),1))
+  })
+  
   
   ### QUEUEING
   data_queue <- reactive({
     queue_temp <- dat
     queue_temp <- queue_temp[is.na(queue_temp$service),]
-    if (input$onlyLB_queue==T) queue_temp <- queue_temp[queue_temp[,"park_location"]=="LB" & !is.na(queue_temp[,"park_location"]),] #only in LB bay
+#     if (input$onlyLB_queue==T) queue_temp <- queue_temp[queue_temp[,"park_location"]=="LB" & !is.na(queue_temp[,"park_location"]),] #only in LB bay
+    queue_temp <- queue_temp[queue_temp[,"park_location"]=="LB" & !is.na(queue_temp[,"park_location"]),] #only in LB bay
     queue_temp <- queue_temp[queue_temp$qtime<=60,] ###ASSUMPTION: we don't believe qtimes longer than 60 minutes
     if (input$mall_filter=="Mall 1") queue_temp <- subset(queue_temp,queue_temp$mall=="np")
     if (input$mall_filter=='Mall 2') queue_temp <- subset(queue_temp,queue_temp$mall=='tp')
@@ -720,7 +774,21 @@ shinyServer(function(input, output, session) {
 #                          hour(queue_temp$entry_time)>=input$time_filter[1]&hour(queue_temp$entry_time)<=input$time_filter[2])
     queue_temp
   }) #END of data_queue 
-  output$hist_queue <- renderPlot({
+  
+  output$cum_qtime <- renderPlot({
+    temp <- data_queue()
+    ggplot(temp,aes(qtime,linetype=mall)) + stat_ecdf(size=1) +
+      ggtitle("Queueing time cumulative distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Fraction")+
+      theme(
+        axis.title.x = element_text(size=20), 
+        axis.text.x  = element_text(size=17), 
+        axis.title.y = element_text(size=20), 
+        axis.text.y  = element_text(size=17), 
+        plot.title = element_text(size=23, face="bold") ) +
+      scale_x_continuous(breaks = round(seq(min(temp$qtime), max(temp$qtime), by = max(temp$qtime)/10),1))
+  })
+  
+  output$hist_qtime <- renderPlot({
     temp <- data_queue()
     ggplot(temp,aes(x=qtime)) +
       geom_histogram(binwidth=max(temp$qtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
@@ -737,14 +805,19 @@ shinyServer(function(input, output, session) {
   
   ### DWELL
   ## dwell time distribution
-  output$hist_dwell <- renderPlot({
+  data_dwell <- reactive({
     temp <- dat[!is.na(dat[,"dtime"]),]
     temp <- temp[is.na(temp[,"service"]),]
     if (input$mall_filter=="Mall 1") temp <- subset(temp,temp$mall=="np")
     if (input$mall_filter=='Mall 2') temp <- subset(temp,temp$mall=='tp')
     temp <- subset(temp, temp$date %in% input_date())
-#     temp <- subset(temp, 
-#                          hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    #     temp <- subset(temp, 
+    #                          hour(temp$entry_time)>=input$time_filter[1]&hour(temp$entry_time)<=input$time_filter[2])
+    
+  })
+  
+  output$hist_dtime <- renderPlot({
+    temp <- data_dwell()
     ggplot(data=temp,aes(dtime)) +
       geom_histogram(binwidth = max(temp$dtime)/50, alpha = 0.4, position="identity",col='black',fill='grey') +
       ggtitle("Dwell time distribution") + theme_bw() + xlab("Time (minutes)") + ylab('Count') +
@@ -753,6 +826,19 @@ shinyServer(function(input, output, session) {
             axis.title.y = element_text(size=16),
             axis.text.y  = element_text(size=12),
             plot.title = element_text(size=20, face='bold'))
+  })
+  
+  output$cum_dtime <- renderPlot({
+    temp <- data_dwell()
+    ggplot(temp,aes(dtime,linetype=mall)) + stat_ecdf(size=1) +
+      ggtitle("Queueing time cumulative distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Fraction")+
+      theme(
+        axis.title.x = element_text(size=20), 
+        axis.text.x  = element_text(size=17), 
+        axis.title.y = element_text(size=20), 
+        axis.text.y  = element_text(size=17), 
+        plot.title = element_text(size=23, face="bold") ) +
+      scale_x_continuous(breaks = round(seq(min(temp$dtime), max(temp$dtime), by = max(temp$dtime)/10),1))
   })
   
   
