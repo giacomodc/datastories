@@ -7,6 +7,20 @@ time_filter <- c(6,18)
 park_location <- NULL
 start <- Sys.time()
 
+qtime_np <- dat[dat[,"mall"]=="np" & !is.na(dat[,"qtime"]) & !is.na(dat[,"park_location"]) & dat[,"park_location"]=="LB" & dat[,"qtime"]<=45,"qtime"]
+qtime_tp <- dat[dat[,"mall"]=="tp" & !is.na(dat[,"qtime"]) & !is.na(dat[,"park_location"]) & dat[,"park_location"]=="LB" & dat[,"qtime"]<=45,"qtime"]
+tmp <- data.frame(x=c(qtime_tp, qtime_np), fac=c(rep(1,length(qtime_tp)), rep(2,length(qtime_np))))
+tmp$fac <- as.factor(tmp$fac)
+qtime_plot <- ggplot(dat, aes(qtime, linetype = mall)) + geom_step(stat='ecdf') +
+  ggtitle("Queueing time cumulative distribution") + theme_bw() + xlab("Time (minutes)") + ylab("Fraction")+
+  theme(
+    axis.title.x = element_text(size=23), 
+    axis.text.x  = element_text(size=20), 
+    axis.title.y = element_text(size=23), 
+    axis.text.y  = element_text(size=20), 
+    plot.title = element_text(size=27, face="bold") ) +
+  scale_x_continuous(breaks = round(seq(min(mall), max(), by = 5),1))
+qtime_plot
 
 temp <- dat
 temp <- temp[!is.na(temp[,"entry_time"]) & !is.na(temp[,"exit_time"]),c("park_location", "entry_time", "exit_time", "dtime")]

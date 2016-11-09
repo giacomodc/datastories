@@ -371,32 +371,33 @@ body <- dashboardBody(
                   sliderInput("input_interval", label="Choose time interval size:", value=50, min=10, max=90, step=10)
               )
             ),
-            tabBox(width=12,
-              tabPanel('Arrivals Distribution',
-                       fluidRow(
-                         column(12,solidHeader=T,
-                                dygraphOutput("arrivals_plot")
-                         )
-                       )),
-              tabPanel('Cumulative Arrivals',
-                       fluidRow(
-                         column(12,solidHeader=T,
-                                dygraphOutput("arrivals_plot_cum"))
-                       )
-              ))),
-    tabItem(tabName='handling',
             fluidRow(
-              box(width=12,status='warning',
-                  selectInput("which_visualization_handling", "Select the visualization:", 
-                              choices= c("Handling times distribution"="htime_distribution", 
-                                         "Handling times vs. size of delivery/pick-up"="htime_delsize",
-                                         "Handling time by arrival time"='htime_arrival'), 
-                              selected="htime_distribution")
-                  )
+              tabBox(width=12,
+                     tabPanel('Arrivals Distribution',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       dygraphOutput("arrivals_plot")
+                                )
+                              )),
+                     tabPanel('Cumulative Arrivals',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       dygraphOutput("arrivals_plot_cum"))
+                              )
+                     )))),
+    tabItem(tabName='handling',
+#             fluidRow(
+#               box(width=12,status='warning',
+#                   selectInput("which_visualization_handling", "Select the visualization:", 
+#                               choices= c("Handling times distribution"="htime_distribution", 
+#                                          "Handling times vs. size of delivery/pick-up"="htime_delsize",
+#                                          "Handling time by arrival time"='htime_arrival'), 
+#                               selected="htime_distribution")
+#                   )
 #               ,
 #               box(width=4,status='warning',
 #                   checkboxInput("byparkloc", "Differentiate by park location"))
-            ),
+#             ),
 #             fluidRow(
 #               conditionalPanel(
 #                 condition = "input.byparkloc",
@@ -408,38 +409,72 @@ body <- dashboardBody(
 #               )
 #             ),
             fluidRow(
-              column(width=12,solidHeader=T,
-                  conditionalPanel(
-                    condition="input.which_visualization_handling=='htime_distribution'",
-                    textOutput("nrowsfinal"),
-                    plotOutput("hist_htime")
-                  ),
-                  conditionalPanel(
-                    condition="input.which_visualization_handling=='htime_delsize'",
-                    #plotOutput("delsize_htime")
-                    "coming soon!"
-                  ),
-                  conditionalPanel(
-                    condition="input.which_visualization_handling=='htime_arrival'",
-                    #plotOutput("delsize_htime")
-                    "coming soon!"
-                  ))
+#                   conditionalPanel(
+#                     condition="input.which_visualization_handling=='htime_distribution'",                     
+#                     textOutput("nrowsfinal"),
+                    tabBox(width=12,
+                           tabPanel('Histogram',
+                                    fluidRow(
+                                      column(12,solidHeader=T,
+                                             plotOutput("hist_htime")
+                                      )
+                                    )),
+                           tabPanel('Cumulative Distribution',
+                                    fluidRow(
+                                      column(12,solidHeader=T,
+                                             plotOutput("cum_htime")
+                                             )
+                                    )
+                           ))
+                  # )
+# ,
+#                   conditionalPanel(
+#                     condition="input.which_visualization_handling=='htime_delsize'",
+#                     #plotOutput("delsize_htime")
+#                     "coming soon!"
+#                   ),
+#                   conditionalPanel(
+#                     condition="input.which_visualization_handling=='htime_arrival'",
+#                     #plotOutput("delsize_htime")
+#                     "coming soon!"
+#                   )
             )),
     tabItem(tabName='queueing',
             fluidRow(
-              box(width=12,status='warning',
-                     checkboxInput("onlyLB_queue", "Include only vehicles that parked in the loading bay.")
-              ),
-              
-              column(width=12,solidHeader=T,
-                     plotOutput("hist_queue")
-              )
+#               box(width=12,status='warning',
+#                      checkboxInput("onlyLB_queue", "Include only vehicles that parked in the loading bay.")
+#               ),
+              tabBox(width=12,
+                     tabPanel('Histogram',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       plotOutput("hist_qtime")
+                                )
+                              )),
+                     tabPanel('Cumulative Distribution',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       plotOutput("cum_qtime")
+                                )
+                              )
+                     ))
             )),
     tabItem(tabName='dwell',
             fluidRow(
-              column(width=12,solidHeader=T,
-                  plotOutput("hist_dwell")
-              )
+              tabBox(width=12,
+                     tabPanel('Histogram',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       plotOutput("hist_dtime")
+                                )
+                              )),
+                     tabPanel('Cumulative Distribution',
+                              fluidRow(
+                                column(12,solidHeader=T,
+                                       plotOutput("cum_dtime")
+                                )
+                              )
+                     ))
             ))
             
     ) # END of tabItems
