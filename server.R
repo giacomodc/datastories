@@ -93,17 +93,7 @@ shinyServer(function(input, output, session) {
     descr
   })   
   
-  
-  
-  
-  
-  
-  ### FLOWCHART
-  output$LBbay_flowchart <- renderImage({
-    filename <- normalizePath(file.path('./images/LBbay_flowchart.jpg', fsep=''))
-    list(src=filename,
-         width=800)
-  }, deleteFile = F)
+
   
   ### MALLS MAP
   #forecast total trips generated
