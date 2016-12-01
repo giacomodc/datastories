@@ -99,17 +99,13 @@ shinyServer(function(input, output, session) {
   #forecast total trips generated
   output$mallsBox <- renderValueBox({
     valueBox(
-      nrow(malls), "Total number of malls considered", icon = icon("list"),
-      color = 'light-blue'
-    )
+      nrow(malls), "Total number of malls considered", icon = icon("list")    )
   })
 
   output$tripsBox <- renderValueBox({
     valueBox(
       sum(malls$no_stores_mallwebsite, na.rm = T)*3, 
-      "Estimated total truck-trips generated per day", icon = icon("list"),
-      color = "light-blue"
-    )
+      "Estimated total truck-trips generated per day", icon = icon("list")    )
   })
 
   
