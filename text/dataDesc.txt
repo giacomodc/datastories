@@ -1,5 +1,4 @@
-### Data Sources
-
+#### Data Sources
 In the data collected a single observation is a 'truck-shipment' entering the premises of a shopping mall. A 'truck-shipment' unit consists in a goods vehicle carrying one driver and sometimes one or more helpers, delivering one or more shipments to its customers (i.e. store(s) located inside a shopping mall).
 
 Each observational unit, uniquely identified by the licence plate, is followed from the time it enters the system, i.e. the premises of a mall, to the time it leaves the system. In between, we have tracked all possible observable processes performed by the goods vehicle and its driver and helpers, in driving, parking, performing the delivery or some other form of services for the customers.
