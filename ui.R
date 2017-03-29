@@ -29,7 +29,7 @@ var4String <- read_file('text/var4Desc.txt')
 
 shinyUI(
 
-navbarPage(title="LoadingBays",theme = shinytheme('cerulean'), 
+navbarPage(title="SGmalls",theme = shinytheme('cerulean'), 
 
 # HOME
 tabPanel("Home", icon=icon('home'), column(width=10, offset=1, tabsetPanel(
@@ -486,8 +486,8 @@ tabPanel("Data Analysis", icon=icon('bar-chart'),
                                            )
                                   )))
                          ))))
-                 ))
-
+                 )),
+tabPanel("Simulation", icon=icon('play-circle'))
 
 ) #END navbarPage
 

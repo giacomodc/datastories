@@ -114,8 +114,8 @@ shinyServer(function(input, output, session) {
     tmp <- malls[malls[,"open_close"]=="open" & !is.na(malls[,"lat"]) & malls[,"type"]=="mall",]
     if (input$malls_map_visual=="no_stores") {
       tmp[,"circle_size"] <- NA
-      minimo <- 5 #min circle size
-      massimo <- 30 #max circle size
+      minimo <- 3 #min circle size
+      massimo <- 15 #max circle size
       tmp[!is.na(tmp[,"no_stores_mallwebsite"]),"circle_size"] <- 
         (tmp[!is.na(tmp[,"no_stores_mallwebsite"]),"no_stores_mallwebsite"]-min(tmp[,"no_stores_mallwebsite"], na.rm = T))*
         (massimo/(max(tmp[,"no_stores_mallwebsite"], na.rm = T)-min(tmp[,"no_stores_mallwebsite"], na.rm = T))) + 
